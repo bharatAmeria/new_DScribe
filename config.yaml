@@ -1,0 +1,48 @@
+project:
+  name: "Discharge Summary Agent"
+  version: "0.1.0"
+
+patients:
+  base_dir: "artifacts"
+  output_dir: "artifacts/outputs"
+  supported_extensions: [".pdf"]
+
+pdf:
+  ocr_threshold_chars: 100  # fall back to OCR if text extraction yields fewer chars
+  ocr_dpi: 100
+
+rag:
+  chunk_size: 800
+  chunk_overlap: 150
+
+vectorstore:
+  persist_dir: "artifacts/vectorstore"   # ChromaDB writes here (survives restarts)
+  embedding_model: "BAAI/bge-small-en-v1.5"  # ~33MB ONNX model, no GPU needed
+  n_results: 6                            # chunks returned per query
+  collection_prefix: "patient"           # collection name = patient_{patient_id}
+
+agent:
+  max_iterations: 20
+  model: "claude-haiku-4-5-20251001"   # override with DISCHARGE_MODEL env var
+  max_tokens: 1024
+
+tools:
+  drug_interaction:
+    max_retries: 2
+    failure_rate: 0.1    # simulated failure probability for robustness testing
+
+learning:
+  iterations: 5                        # number of draft → review → improve cycles
+  memory_dir: "artifacts/memory"       # where correction memory is stored
+  metrics_dir: "artifacts/metrics"     # where improvement curves are saved
+  held_out_sections:                   # sections used to evaluate improvement
+    - principal_diagnosis
+    - hospital_course
+    - discharge_medications
+    - discharge_condition
+  reward_threshold: 0.85               # stop early if reward >= this value
+
+logging:
+  log_dir: "logs"
+  max_log_size_mb: 5
+  backup_count: 3
